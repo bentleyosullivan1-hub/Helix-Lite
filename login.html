@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Sign In</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .login-shell { max-width: 440px; margin: 90px auto; padding: 0 20px; }
+  .login-box {
+    padding: 32px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
+  }
+  .login-box h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .login-box > p.sub { color: var(--muted); font-size: .9rem; margin: 0 0 22px; line-height: 1.6; }
+
+  .login-tabs { display: flex; gap: 6px; margin-bottom: 20px; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .login-tabs button {
+    flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; transition: background .15s ease, color .15s ease;
+  }
+  .login-tabs button.active { background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; }
+
+  .login-box label { display: block; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; margin: 16px 0 6px; color: var(--muted); }
+  .login-box input {
+    width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--text); font: inherit; box-sizing: border-box;
+  }
+  .login-box input:focus { outline: none; border-color: var(--a); box-shadow: 0 0 0 3px rgba(109,225,255,.12); }
+
+  .login-box button.submit {
+    margin-top: 22px; width: 100%; padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+    background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; font-weight: 700;
+  }
+  .login-box button.submit:disabled { opacity: .5; cursor: default; }
+  .login-box button.submit:hover:not(:disabled) { box-shadow: 0 0 20px rgba(75,220,255,.4); }
+
+  #loginResult { margin-top: 16px; font-size: .82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--muted); min-height: 1.2em; }
+  #loginResult.ok { color: var(--c); }
+  #loginResult.err { color: #ff8ba0; }
+
+  .session-box { text-align: center; }
+  .session-box strong { color: var(--text); }
+  .session-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .session-actions .btn { flex: 1; text-align: center; }
+</style>
+</head>
+<body data-page="login">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a class="active" href="login.html">Login</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="login-shell">
+  <div class="login-box" id="loginBox">
+    <div id="formView">
+      <h1>Welcome back.</h1>
+      <p class="sub">Sign in or create an account to continue.</p>
+
+      <div class="login-tabs">
+        <button type="button" id="tabSignIn" class="active">Sign in</button>
+        <button type="button" id="tabSignUp">Create account</button>
+      </div>
+
+      <form id="loginForm">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required>
+
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" required minlength="6">
+
+        <button id="loginSubmit" class="submit" type="submit">Sign in</button>
+        <div id="loginResult"></div>
+      </form>
+
+      <div class="login-foot" id="redirectHint"></div>
+    </div>
+
+    <div id="sessionView" class="session-box" style="display:none;">
+      <h1>You're already signed in.</h1>
+      <p class="sub">Signed in as <strong id="sessionEmail"></strong></p>
+      <div class="session-actions">
+        <a class="btn primary" id="continueLink" href="games.html">Continue →</a>
+        <button class="btn" id="signOutBtn" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> SECURE SIGN-IN</footer>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Renamed to avoid colliding with the global `supabase` the CDN script
+   itself defines — declaring `const supabase = ...` in the same scope
+   as that library throws "Identifier 'supabase' has already been declared". */
+const SUPABASE_URL = "https://biqoeaxxzegfvlxopazd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_U9ZX17upjBz5nZ47rpwpNQ_Ve2xu-gg";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const params = new URLSearchParams(location.search);
+const redirectTo = params.get("redirect") || "games.html";
+
+const formView = document.getElementById("formView");
+const sessionView = document.getElementById("sessionView");
+const sessionEmail = document.getElementById("sessionEmail");
+const continueLink = document.getElementById("continueLink");
+const signOutBtn = document.getElementById("signOutBtn");
+
+const tabSignIn = document.getElementById("tabSignIn");
+const tabSignUp = document.getElementById("tabSignUp");
+const loginForm = document.getElementById("loginForm");
+const loginSubmit = document.getElementById("loginSubmit");
+const loginResult = document.getElementById("loginResult");
+const redirectHint = document.getElementById("redirectHint");
+
+let mode = "signin"; // or "signup"
+
+redirectHint.textContent = `You'll be sent to ${redirectTo} after signing in.`;
+continueLink.href = redirectTo;
+
+function setMode(next) {
+  mode = next;
+  const isSignIn = mode === "signin";
+  tabSignIn.classList.toggle("active", isSignIn);
+  tabSignUp.classList.toggle("active", !isSignIn);
+  loginSubmit.textContent = isSignIn ? "Sign in" : "Create account";
+  document.getElementById("loginPassword").autocomplete = isSignIn ? "current-password" : "new-password";
+  loginResult.textContent = "";
+  loginResult.className = "";
+}
+
+tabSignIn.addEventListener("click", () => setMode("signin"));
+tabSignUp.addEventListener("click", () => setMode("signup"));
+
+async function checkExistingSession() {
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    console.error(error);
+    return;
+  }
+  const session = data.session;
+  if (session?.user?.email) {
+    formView.style.display = "none";
+    sessionView.style.display = "block";
+    sessionEmail.textContent = session.user.email;
+  }
+}
+
+signOutBtn.addEventListener("click", async () => {
+  signOutBtn.disabled = true;
+  await supabaseClient.auth.signOut();
+  location.reload();
+});
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  loginResult.className = "";
+  loginSubmit.disabled = true;
+
+  try {
+    if (mode === "signin") {
+      loginResult.textContent = "Signing in…";
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      loginResult.textContent = "Signed in. Redirecting…";
+      loginResult.className = "ok";
+      location.href = redirectTo;
+      return;
+    }
+
+    loginResult.textContent = "Creating account…";
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) throw error;
+
+    if (!data.session) {
+      loginResult.textContent = "Account created. Check your email to confirm, then sign in.";
+      loginResult.className = "ok";
+      setMode("signin");
+      loginSubmit.disabled = false;
+      return;
+    }
+
+    loginResult.textContent = "Account created. Redirecting…";
+    loginResult.className = "ok";
+    location.href = redirectTo;
+    return;
+
+  } catch (err) {
+    loginResult.textContent = err.message || "Something went wrong.";
+    loginResult.className = "err";
+  } finally {
+    loginSubmit.disabled = false;
+  }
+});
+
+checkExistingSession();
+</script>
+</body>
+</html>

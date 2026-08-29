@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Home</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>
+   <img src="helix.jpg" alt="The logo" style="width: 100px; height: auto;">
+  </span> HELIX</a>
+  <nav>
+    <a class="active" href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell">
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">HELIX // GAMES // HELIX</div>
+      <h1 class="heavy">Welcome to the <span class="gradient-text"> HELIX </span> <br>Network.</h1>
+      <p>Fast-loading games and a clean account system, built for a simple, focused arcade experience.</p>
+      <div class="actions"><a class="btn primary" href="games.html">ENTER GAME ZONES →</a><a class="btn" href="login.html">SIGN IN</a></div>
+      <div class="hero-badges">
+        <span>Low-latency paths</span>
+        <span>Game-ready nodes</span>
+      </div>
+    </div>
+
+<div class="hero-visual">
+  <div class="orbit-frame">
+    <div class="scanline"></div>
+    <div class="pulse-core"></div>
+    <div class="status-panel" style="zoom: 1; padding: 8px 12px; gap: 6px;">
+      <div class="status-header">
+        <span class="dot green"></span>
+        <span>Core Processes</span>
+      </div>
+      <div class="status-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px;">
+        <div>
+          <label style="font-size: 0.7rem;">Nodes</label>
+          <strong id="nodes-count" data-target="320" data-suffix="+" style="font-size: 0.9rem;">320+</strong>
+        </div>
+        <div>
+          <label style="font-size: 0.7rem;">Uptime</label>
+          <strong id="uptime" data-target="0" data-suffix=".9" style="font-size: 0.9rem;">0.9</strong>
+        </div>
+        <div>
+          <label style="font-size: 0.7rem;">Version</label>
+          <strong id="version" data-target="0.8" data-suffix=".0" style="font-size: 0.9rem;">0.8.0</strong>
+        </div>
+        <div>
+          <label style="font-size: 0.7rem;">Latency</label>
+          <strong id="latency" data-target="45" data-suffix="ms" style="font-size: 0.9rem;">0ms</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let totalSeconds = 0;
+  setInterval(() => uptime.textContent = ++totalSeconds + '.9', 1000);
+  setInterval(() => latency.textContent = (Math.floor(Math.random() * 130) + 20) + 'ms', 1000);
+</script>
+
+</section>
+
+  <section class="brand-bar">
+    <span>VOYAGER LABS</span>
+    <span>NEBULA GRID</span>
+    <span>ORBITAL STACK</span>
+    <span>PORTAL SYSTEMS</span>
+    <span>QUANTUM NODE</span>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">INFRASTRUCTURE</span>
+        <h2 class="heavy">Game-ready systems.</h2>
+      </div>
+      <p>Helix keeps things simple: an arcade hub and a clean account system in one fast, focused stack.</p>
+    </div>
+    <div class="grid three">
+      <a class="feature" href="games.html">
+        <span class="feature-num">01</span>
+        <h3>Game Zones</h3>
+        <p>Launch interactive arcade experiences and game-ready environments inside a cinematic gaming hub.</p>
+        <strong class="text-cyan">PLAY →</strong>
+      </a>
+      <a class="feature" href="login.html">
+        <span class="feature-num">02</span>
+        <h3>Account</h3>
+        <p>Sign in or create an account to keep your profile in sync.</p>
+        <strong class="text-cyan">SIGN IN →</strong>
+      </a>
+    </div>
+  </section>
+
+  <section class="section testimonials">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">SOCIAL PROOF</span>
+        <h2 class="heavy">Built for ambitious teams and premium launches.</h2>
+      </div>
+      <p>Designed to feel like a flagship product experience while remaining flexible enough for real-world rollout and iteration.</p>
+    </div>
+    <div class="testimonial-grid">
+      <article class="quote-card">
+        <p>“It feels like a product that should cost more than it does, while still being approachable and fast to ship.”</p>
+        <div class="person">
+          <strong>A. Quinn</strong>
+          <span>Experience Director</span>
+        </div>
+      </article>
+      <article class="quote-card">
+        <p>“The modularity gives us room to evolve, and the interface makes our launch feel premium from day one.”</p>
+        <div class="person">
+          <strong>M. Park</strong>
+          <span>Brand Systems Lead</span>
+        </div>
+      </article>
+      <article class="quote-card">
+        <p>“Helix gives the right mix of technical structure and visual polish; it works for product, brand, and ops.”</p>
+        <div class="person">
+          <strong>S. Yates</strong>
+          <span>Launch Strategist</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> SYSTEM STATUS: <span class="status-online">LIVE AND READY</span></footer>
+<script src="js/app.js"></script>
+</body>
+</html>

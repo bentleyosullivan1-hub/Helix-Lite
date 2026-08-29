@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Arcade</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="arcade">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a class="active" href="games.html">Games</a>
+    <a href="login.html">Login</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">GAME // SECTOR 02</span>
+    <h1>PLAY <span>ON HELIX.</span></h1>
+    <p>A small, hand-picked collection of games at your fingertips.</p>
+  </section>
+
+  <section class="stats-grid three-up">
+    <div class="metric-box">
+      <strong id="gameCount">--</strong>
+      <span>Featured experiences</span>
+    </div>
+    <div class="metric-box">
+      <strong>2</strong>
+      <span>Core categories</span>
+    </div>
+    <div class="metric-box">
+      <strong>100%</strong>
+      <span>Reliability</span>
+    </div>
+  </section>
+
+  <section class="toolbar">
+    <input id="gameSearch" placeholder="Search the arcade...">
+    <div class="filters">
+      <button class="filter active" data-filter="all">All</button>
+      <button class="filter" data-filter="arcade">Arcade</button>
+      <button class="filter" data-filter="puzzle">Puzzle</button>
+    </div>
+  </section>
+
+  <section class="game-grid" id="gameGrid">
+    <p class="game-loading">Loading games from the arcade folder...</p>
+  </section>
+</main>
+
+<div class="modal" id="gameModal">
+  <div class="modal-box">
+    <button class="close" id="closeGame">×</button>
+    <button class="fullscreen-game" id="fullscreenGame" type="button" title="Open game fullscreen">⛶ FULLSCREEN</button>
+    <div id="gameMount"></div>
+  </div>
+</div>
+
+<footer class="protocol-footer">HELIX ARCADE</footer>
+<script src="js/app.js"></script>
+<script src="js/games.js"></script>
+</body>
+</html>
