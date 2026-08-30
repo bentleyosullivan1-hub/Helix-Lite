@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Ideas</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .ideas-shell { max-width: 680px; margin: 0 auto; padding: 0 20px 80px; }
+  .ideas-box {
+    padding: 28px; border: 1px solid var(--line); border-radius: 20px;
+    background: var(--panel-strong); box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  .ideas-box h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  .ideas-box > p.sub { color: var(--muted); font-size: .88rem; margin: 0 0 18px; line-height: 1.6; }
+
+  .idea-form label { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 0 6px; }
+  .idea-form label:first-of-type { margin-top: 0; }
+  .idea-form input, .idea-form textarea {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--text); font: inherit; box-sizing: border-box; resize: vertical;
+  }
+  .idea-form textarea { min-height: 70px; }
+  .idea-form button {
+    margin-top: 14px; padding: 10px 18px; border: 0; border-radius: 10px; cursor: pointer;
+    background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; font-weight: 700;
+  }
+  .idea-form button:disabled { opacity: .5; cursor: default; }
+
+  .idea-card {
+    display: flex; gap: 16px; align-items: flex-start; padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .idea-card:last-child { border-bottom: none; }
+  .vote-btn {
+    flex-shrink: 0; width: 54px; height: 54px; border-radius: 12px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--text); cursor: pointer; font: inherit;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  .vote-btn strong { font-size: 1rem; }
+  .vote-btn span { font-size: .62rem; color: var(--muted); }
+  .vote-btn.voted { border-color: var(--a); background: rgba(75,220,255,.1); }
+
+  .idea-body h3 { margin: 0 0 4px; font-size: 1rem; }
+  .idea-body p { margin: 0 0 6px; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+  .idea-status {
+    display: inline-block; font-size: .68rem; text-transform: uppercase; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+  }
+
+  #ideasStatus { font-size: .82rem; color: var(--muted); min-height: 1.2em; margin-top: 10px; }
+  #ideasStatus.err { color: #ff8ba0; }
+  #ideasStatus.ok { color: var(--c); }
+</style>
+</head>
+<body data-page="ideas">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+    <a href="discord.html">Discord</a>
+    <a href="apply.html">Apply</a>
+    <a class="active" href="ideas.html">Ideas</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell ideas-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">COMMUNITY</span>
+    <h1>SHAPE <span>HELIX.</span></h1>
+    <p>Post an idea, vote on what others suggested — premium votes count double.</p>
+  </section>
+
+  <div class="ideas-box">
+    <h1>Suggest something</h1>
+    <p class="sub" id="postHint">Sign in to post an idea.</p>
+    <form class="idea-form" id="ideaForm" style="display:none;">
+      <label for="ideaTitle">Title</label>
+      <input id="ideaTitle" required maxlength="120" placeholder="e.g. Dark mode toggle">
+      <label for="ideaDesc">Details (optional)</label>
+      <textarea id="ideaDesc" maxlength="500"></textarea>
+      <button type="submit" id="ideaSubmit">Post idea</button>
+      <div id="ideasStatus"></div>
+    </form>
+  </div>
+
+  <div class="ideas-box">
+    <h1>Open ideas</h1>
+    <p class="sub">Sorted by weighted votes.</p>
+    <div id="ideasList"><p class="sub">Loading…</p></div>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> IDEAS</footer>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/premium.js"></script>
+<script>
+let currentProfile = null;
+let myVotes = new Set();
+
+async function loadIdeas() {
+  const sb = HelixAuth.getClient();
+  const listEl = document.getElementById("ideasList");
+
+  const { data: suggestions, error } = await sb
+    .from("suggestions")
+    .select("id, title, description, status, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    listEl.innerHTML = `<p class="sub">Couldn't load ideas right now.</p>`;
+    return;
+  }
+
+  const { data: votes } = await sb.from("suggestion_votes").select("suggestion_id, weight, user_id");
+
+  const tally = {};
+  (votes || []).forEach((v) => {
+    tally[v.suggestion_id] = (tally[v.suggestion_id] || 0) + v.weight;
+    if (currentProfile && v.user_id === currentProfile.id) myVotes.add(v.suggestion_id);
+  });
+
+  const sorted = [...(suggestions || [])].sort((a, b) => (tally[b.id] || 0) - (tally[a.id] || 0));
+
+  if (!sorted.length) {
+    listEl.innerHTML = `<p class="sub">No ideas yet — be the first.</p>`;
+    return;
+  }
+
+  listEl.innerHTML = sorted.map((s) => `
+    <div class="idea-card">
+      <button class="vote-btn ${myVotes.has(s.id) ? "voted" : ""}" data-id="${s.id}">
+        <strong>${tally[s.id] || 0}</strong>
+        <span>votes</span>
+      </button>
+      <div class="idea-body">
+        <h3>${escapeHtml(s.title)}</h3>
+        ${s.description ? `<p>${escapeHtml(s.description)}</p>` : ""}
+        <span class="idea-status">${escapeHtml(s.status)}</span>
+      </div>
+    </div>
+  `).join("");
+
+  listEl.querySelectorAll(".vote-btn").forEach((btn) => {
+    btn.addEventListener("click", () => toggleVote(Number(btn.dataset.id)));
+  });
+}
+
+async function toggleVote(suggestionId) {
+  const status = document.getElementById("ideasStatus");
+  if (!currentProfile) {
+    status.textContent = "Sign in to vote.";
+    status.className = "err";
+    return;
+  }
+
+  const sb = HelixAuth.getClient();
+
+  if (myVotes.has(suggestionId)) {
+    await sb.from("suggestion_votes").delete().eq("suggestion_id", suggestionId).eq("user_id", currentProfile.id);
+    myVotes.delete(suggestionId);
+  } else {
+    const weight = HelixAuth.isPremium(currentProfile) ? 2 : 1;
+    await sb.from("suggestion_votes").insert({ suggestion_id: suggestionId, user_id: currentProfile.id, weight });
+    myVotes.add(suggestionId);
+  }
+  loadIdeas();
+}
+
+document.getElementById("ideaForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const status = document.getElementById("ideasStatus");
+  const btn = document.getElementById("ideaSubmit");
+  const title = document.getElementById("ideaTitle").value.trim();
+  const description = document.getElementById("ideaDesc").value.trim();
+
+  if (!title) return;
+
+  btn.disabled = true;
+  status.textContent = "Posting…";
+  status.className = "";
+
+  const { error } = await HelixAuth.getClient()
+    .from("suggestions")
+    .insert({ title, description: description || null, created_by: currentProfile.id });
+
+  if (error) {
+    status.textContent = "Couldn't post that — try again.";
+    status.className = "err";
+  } else {
+    status.textContent = "Posted!";
+    status.className = "ok";
+    document.getElementById("ideaForm").reset();
+    loadIdeas();
+  }
+  btn.disabled = false;
+});
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+(async function init() {
+  currentProfile = await HelixAuth.getProfile();
+  if (currentProfile) {
+    document.getElementById("postHint").textContent = HelixAuth.isPremium(currentProfile)
+      ? "Your vote counts double as a premium member."
+      : "Post an idea below, or vote on one already posted.";
+    document.getElementById("ideaForm").style.display = "block";
+  }
+  loadIdeas();
+})();
+</script>
+</body>
+</html>

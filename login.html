@@ -45,6 +45,13 @@
   .session-box strong { color: var(--text); }
   .session-actions { display: flex; gap: 10px; margin-top: 20px; }
   .session-actions .btn { flex: 1; text-align: center; }
+
+  .helix-badge {
+    display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 999px; vertical-align: middle;
+  }
+  .helix-badge-premium { background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; }
+  .helix-badge-admin { background: rgba(255,139,160,.15); color: #ff8ba0; border: 1px solid rgba(255,139,160,.4); }
 </style>
 </head>
 <body data-page="login">
@@ -55,6 +62,8 @@
     <a href="index.html">Index</a>
     <a href="games.html">Games</a>
     <a class="active" href="login.html">Login</a>
+    <a href="discord.html">Discord</a>
+    <a href="apply.html">Apply</a>
   </nav>
   <button class="pill" onclick="toggleTheme()">◐ Interface</button>
 </header>
@@ -86,10 +95,15 @@
 
     <div id="sessionView" class="session-box" style="display:none;">
       <h1>You're already signed in.</h1>
-      <p class="sub">Signed in as <strong id="sessionEmail"></strong></p>
+      <p class="sub">Signed in as <strong id="sessionEmail"></strong> <span id="sessionBadge"></span></p>
       <div class="session-actions">
         <a class="btn primary" id="continueLink" href="games.html">Continue →</a>
         <button class="btn" id="signOutBtn" type="button">Sign out</button>
+      </div>
+      <div class="session-actions" id="accountLinks" style="margin-top:10px;">
+        <a class="btn" href="settings.html">Settings</a>
+        <a class="btn" href="ideas.html">Ideas</a>
+        <a class="btn" href="admin.html" id="adminLink" style="display:none;">Admin panel</a>
       </div>
     </div>
   </div>
@@ -98,13 +112,11 @@
 <footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> SECURE SIGN-IN</footer>
 <script src="js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/premium.js"></script>
 <script>
-/* Renamed to avoid colliding with the global `supabase` the CDN script
-   itself defines — declaring `const supabase = ...` in the same scope
-   as that library throws "Identifier 'supabase' has already been declared". */
-const SUPABASE_URL = "https://biqoeaxxzegfvlxopazd.supabase.co";
-const SUPABASE_KEY = "sb_publishable_U9ZX17upjBz5nZ47rpwpNQ_Ve2xu-gg";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+/* Client + profile helpers now live in js/premium.js and are shared with
+   settings.html, ideas.html, and admin.html. */
+const supabaseClient = HelixAuth.getClient();
 
 const params = new URLSearchParams(location.search);
 const redirectTo = params.get("redirect") || "games.html";
@@ -152,6 +164,10 @@ async function checkExistingSession() {
     formView.style.display = "none";
     sessionView.style.display = "block";
     sessionEmail.textContent = session.user.email;
+
+    const profile = await HelixAuth.getProfile();
+    HelixAuth.renderBadge(document.getElementById("sessionBadge"), profile);
+    document.getElementById("adminLink").style.display = HelixAuth.isAdmin(profile) ? "" : "none";
   }
 }
 

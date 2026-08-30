@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Discord</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .discord-shell { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .discord-box {
+    padding: 32px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+  .discord-box h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .discord-box > p.sub { color: var(--muted); font-size: .9rem; margin: 0 0 22px; line-height: 1.6; }
+
+  .discord-connect { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  .btn.discord {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(100deg, #5865f2, #8b7bff);
+    color: #fff; border: 0; padding: 12px 20px; border-radius: 10px;
+    font-weight: 700; cursor: pointer; font: inherit; text-decoration: none;
+  }
+  .btn.discord:hover { box-shadow: 0 0 20px rgba(88,101,242,.45); }
+  .btn.discord svg { width: 18px; height: 18px; fill: currentColor; }
+
+  .discord-profile { display: flex; align-items: center; gap: 14px; }
+  .discord-profile img { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); }
+  .discord-profile .name { font-weight: 700; color: var(--text); }
+  .discord-profile .tag { color: var(--muted); font-size: .82rem; }
+
+  .discord-signout {
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    padding: 9px 16px; border-radius: 10px; cursor: pointer; font: inherit;
+  }
+  .discord-signout:hover { color: var(--text); border-color: var(--a); }
+
+  #discordStatus { margin-top: 14px; font-size: .82rem; line-height: 1.6; color: var(--muted); min-height: 1.2em; }
+  #discordStatus.err { color: #ff8ba0; }
+
+  .channel-groups { display: flex; flex-direction: column; gap: 18px; }
+  .channel-group h2 {
+    font-size: .74rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+  .channel-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .channel-list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; color: var(--text); font-size: .92rem;
+  }
+  .channel-list li:hover { background: rgba(255,255,255,.03); }
+  .channel-icon { color: var(--muted); width: 18px; text-align: center; flex-shrink: 0; }
+
+  .channel-empty, .channel-loading {
+    color: var(--muted); font-size: .88rem; padding: 6px 2px;
+  }
+
+  .locked-note {
+    text-align: center; color: var(--muted); font-size: .88rem; padding: 30px 10px;
+  }
+</style>
+</head>
+<body data-page="discord">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+    <a class="active" href="discord.html">Discord</a>
+    <a href="apply.html">Apply</a>
+    <a href="ideas.html">Ideas</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell discord-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">GAME // SECTOR 03</span>
+    <h1>HELIX <span>ON DISCORD.</span></h1>
+    <p>Connect your Discord account to browse the channels in the Helix server.</p>
+  </section>
+
+  <div class="discord-box">
+    <h1>Connect Discord</h1>
+    <p class="sub">Sign in with Discord to view the server's channels.</p>
+
+    <div id="discordLoggedOut">
+      <div class="discord-connect">
+        <button class="btn discord" id="discordConnectBtn" type="button">
+          <svg viewBox="0 0 127.14 96.36" aria-hidden="true"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+          Login with Discord
+        </button>
+      </div>
+      <div id="discordStatus"></div>
+    </div>
+
+    <div id="discordLoggedIn" style="display:none;">
+      <div class="discord-connect">
+        <div class="discord-profile">
+          <img id="discordAvatar" src="" alt="">
+          <div>
+            <div class="name" id="discordName"></div>
+            <div class="tag" id="discordTag"></div>
+          </div>
+        </div>
+        <button class="discord-signout" id="discordSignOutBtn" type="button">Disconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="discord-box" id="channelsBox">
+    <h1>Channels</h1>
+    <p class="sub">A live list of the channels in the Helix Discord server.</p>
+    <div id="channelsMount">
+      <p class="locked-note">Connect your Discord account above to view the server's channels.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> DISCORD BRIDGE</footer>
+<script src="js/app.js"></script>
+<script>
+/* -----------------------------------------------------------------------
+   Fill this in from the Discord Developer Portal (discord.com/developers).
+   The client ID is public and safe to ship to the browser — the client
+   SECRET stays server-side only, in the Vercel project's environment
+   variables (see api/discord-callback.js and the README notes below).
+----------------------------------------------------------------------- */
+const DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID";
+
+const REDIRECT_URI = `${location.origin}${location.pathname}`;
+const STORAGE_KEY = "helix_discord_profile";
+
+const loggedOutView = document.getElementById("discordLoggedOut");
+const loggedInView = document.getElementById("discordLoggedIn");
+const statusEl = document.getElementById("discordStatus");
+const connectBtn = document.getElementById("discordConnectBtn");
+const signOutBtn = document.getElementById("discordSignOutBtn");
+const avatarEl = document.getElementById("discordAvatar");
+const nameEl = document.getElementById("discordName");
+const tagEl = document.getElementById("discordTag");
+const channelsMount = document.getElementById("channelsMount");
+
+function setStatus(msg, isError) {
+  statusEl.textContent = msg || "";
+  statusEl.className = isError ? "err" : "";
+}
+
+function showProfile(profile) {
+  loggedOutView.style.display = "none";
+  loggedInView.style.display = "block";
+  avatarEl.src = profile.avatar;
+  avatarEl.alt = profile.username;
+  nameEl.textContent = profile.global_name || profile.username;
+  tagEl.textContent = "@" + profile.username;
+  loadChannels();
+}
+
+function showLoggedOut() {
+  loggedOutView.style.display = "block";
+  loggedInView.style.display = "none";
+  channelsMount.innerHTML = '<p class="locked-note">Connect your Discord account above to view the server\'s channels.</p>';
+}
+
+connectBtn.addEventListener("click", () => {
+  if (DISCORD_CLIENT_ID === "YOUR_DISCORD_CLIENT_ID") {
+    setStatus("Discord isn't configured yet — add your Client ID in discord.html.", true);
+    return;
+  }
+  const authorizeUrl = new URL("https://discord.com/oauth2/authorize");
+  authorizeUrl.searchParams.set("client_id", DISCORD_CLIENT_ID);
+  authorizeUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+  authorizeUrl.searchParams.set("response_type", "code");
+  authorizeUrl.searchParams.set("scope", "identify");
+  location.href = authorizeUrl.toString();
+});
+
+signOutBtn.addEventListener("click", () => {
+  sessionStorage.removeItem(STORAGE_KEY);
+  showLoggedOut();
+});
+
+async function exchangeCode(code) {
+  setStatus("Connecting to Discord…");
+  try {
+    const res = await fetch("/api/discord-callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, redirect_uri: REDIRECT_URI }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not sign in with Discord.");
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    setStatus("");
+    showProfile(data);
+  } catch (err) {
+    setStatus(err.message, true);
+  } finally {
+    history.replaceState({}, "", REDIRECT_URI);
+  }
+}
+
+async function loadChannels() {
+  channelsMount.innerHTML = '<p class="channel-loading">Loading channels…</p>';
+  try {
+    const res = await fetch("/api/discord-channels");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load channels.");
+
+    if (!data.groups || !data.groups.length) {
+      channelsMount.innerHTML = '<p class="channel-empty">No channels found.</p>';
+      return;
+    }
+
+    channelsMount.innerHTML = data.groups.map((group) => `
+      <div class="channel-group">
+        <h2>${escapeHtml(group.name)}</h2>
+        <ul class="channel-list">
+          ${group.channels.length
+            ? group.channels.map((c) => `
+              <li><span class="channel-icon">${c.icon}</span><span>${escapeHtml(c.name)}</span></li>
+            `).join("")
+            : '<li class="channel-empty">No channels in this category.</li>'}
+        </ul>
+      </div>
+    `).join("");
+  } catch (err) {
+    channelsMount.innerHTML = `<p class="channel-empty">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+(function init() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  const stored = sessionStorage.getItem(STORAGE_KEY);
+
+  if (code) {
+    exchangeCode(code);
+    return;
+  }
+
+  if (stored) {
+    try {
+      showProfile(JSON.parse(stored));
+      return;
+    } catch (e) {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  showLoggedOut();
+})();
+</script>
+</body>
+</html>

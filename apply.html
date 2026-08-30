@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Apply</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .apply-shell { max-width: 620px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .apply-box {
+    padding: 32px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
+  }
+  .apply-box h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .apply-box > p.sub { color: var(--muted); font-size: .9rem; margin: 0 0 22px; line-height: 1.6; }
+
+  .apply-tabs {
+    display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px; padding: 4px;
+  }
+  .apply-tabs button {
+    flex: 1; min-width: 110px; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; transition: background .15s ease, color .15s ease;
+  }
+  .apply-tabs button.active { background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; }
+
+  .apply-form label { display: block; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; margin: 16px 0 6px; color: var(--muted); }
+  .apply-form label:first-of-type { margin-top: 0; }
+  .apply-form input, .apply-form select, .apply-form textarea {
+    width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--text); font: inherit; box-sizing: border-box; resize: vertical;
+  }
+  .apply-form textarea { min-height: 100px; }
+  .apply-form input:focus, .apply-form select:focus, .apply-form textarea:focus {
+    outline: none; border-color: var(--a); box-shadow: 0 0 0 3px rgba(109,225,255,.12);
+  }
+
+  .apply-form button.submit {
+    margin-top: 22px; width: 100%; padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+    background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; font-weight: 700;
+  }
+  .apply-form button.submit:disabled { opacity: .5; cursor: default; }
+  .apply-form button.submit:hover:not(:disabled) { box-shadow: 0 0 20px rgba(75,220,255,.4); }
+
+  #applyResult { margin-top: 16px; font-size: .82rem; line-height: 1.6; white-space: pre-wrap; color: var(--muted); min-height: 1.2em; }
+  #applyResult.ok { color: var(--c); }
+  #applyResult.err { color: #ff8ba0; }
+</style>
+</head>
+<body data-page="apply">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+    <a href="discord.html">Discord</a>
+    <a class="active" href="apply.html">Apply</a>
+    <a href="ideas.html">Ideas</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell apply-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">GAME // SECTOR 04</span>
+    <h1>APPLY TO <span>HELIX.</span></h1>
+    <p>Beta access, moderator applications, and anything else we add later — all in one place.</p>
+  </section>
+
+  <div class="apply-box">
+    <h1 id="formTitle">Beta Access</h1>
+    <p class="sub" id="formSub"></p>
+
+    <div class="apply-tabs" id="applyTabs"></div>
+
+    <form class="apply-form" id="applyForm">
+      <div id="fieldMount"></div>
+      <button class="submit" id="applySubmit" type="submit">Submit</button>
+      <div id="applyResult"></div>
+    </form>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> APPLICATIONS</footer>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/premium.js"></script>
+<script>
+/* ---------------------------------------------------------------------
+   Every form on this page is described here. To add a new one later
+   (a new "etc" form), just add another entry to this array — the tabs,
+   fields, and submit handling are all built from this list.
+
+   Field types supported: "text", "email", "number", "textarea", "select"
+   (select needs an "options" array).
+--------------------------------------------------------------------- */
+const FORMS = [
+  {
+    id: "beta",
+    label: "Beta Access",
+    title: "Beta Access",
+    sub: "Request early access to the Helix beta.",
+    fields: [
+      { id: "discord", label: "Discord username", type: "text", required: true, placeholder: "e.g. yourname" },
+      { id: "email", label: "Email (optional)", type: "email", required: false },
+      { id: "platform", label: "Platform", type: "select", required: true, options: ["PC", "Mobile", "Both"] },
+      { id: "reason", label: "Why do you want beta access?", type: "textarea", required: true },
+    ],
+  },
+  {
+    id: "moderator",
+    label: "Moderator App",
+    title: "Moderator Application",
+    sub: "Apply to help moderate the Helix Discord server.",
+    fields: [
+      { id: "discord", label: "Discord username", type: "text", required: true },
+      { id: "age", label: "Age", type: "number", required: true },
+      { id: "timezone", label: "Timezone", type: "text", required: true, placeholder: "e.g. GMT+10" },
+      { id: "availability", label: "Hours available per week", type: "text", required: true },
+      { id: "experience", label: "Moderation experience", type: "textarea", required: true },
+      { id: "why", label: "Why do you want to be a moderator?", type: "textarea", required: true },
+    ],
+  },
+  {
+    id: "feedback",
+    label: "Feedback",
+    title: "Feedback & Bug Reports",
+    sub: "Report a bug, request a feature, or just tell us something.",
+    fields: [
+      { id: "discord", label: "Discord username (optional)", type: "text", required: false },
+      { id: "category", label: "Type", type: "select", required: true, options: ["Bug report", "Feature request", "General feedback", "Other"] },
+      { id: "message", label: "Details", type: "textarea", required: true },
+    ],
+  },
+];
+
+const tabsEl = document.getElementById("applyTabs");
+const fieldMount = document.getElementById("fieldMount");
+const formTitle = document.getElementById("formTitle");
+const formSub = document.getElementById("formSub");
+const applyForm = document.getElementById("applyForm");
+const applySubmit = document.getElementById("applySubmit");
+const applyResult = document.getElementById("applyResult");
+
+let activeForm = FORMS[0];
+
+function renderTabs() {
+  tabsEl.innerHTML = FORMS.map((f) => `
+    <button type="button" data-id="${f.id}" class="${f.id === activeForm.id ? "active" : ""}">${f.label}</button>
+  `).join("");
+
+  tabsEl.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeForm = FORMS.find((f) => f.id === btn.dataset.id);
+      renderTabs();
+      renderFields();
+    });
+  });
+}
+
+function fieldHtml(field) {
+  const req = field.required ? "required" : "";
+  if (field.type === "textarea") {
+    return `<textarea id="f_${field.id}" ${req} placeholder="${field.placeholder || ""}"></textarea>`;
+  }
+  if (field.type === "select") {
+    const opts = field.options.map((o) => `<option value="${o}">${o}</option>`).join("");
+    return `<select id="f_${field.id}" ${req}>${opts}</select>`;
+  }
+  return `<input id="f_${field.id}" type="${field.type}" ${req} placeholder="${field.placeholder || ""}">`;
+}
+
+function renderFields() {
+  formTitle.textContent = activeForm.title;
+  formSub.textContent = activeForm.sub;
+  fieldMount.innerHTML = activeForm.fields.map((field) => `
+    <label for="f_${field.id}">${field.label}</label>
+    ${fieldHtml(field)}
+  `).join("");
+  applyResult.textContent = "";
+  applyResult.className = "";
+}
+
+applyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const fields = {};
+  for (const field of activeForm.fields) {
+    const el = document.getElementById(`f_${field.id}`);
+    const value = el.value.trim();
+    if (field.required && !value) {
+      applyResult.textContent = `Please fill in "${field.label}".`;
+      applyResult.className = "err";
+      el.focus();
+      return;
+    }
+    if (value) fields[field.label] = value;
+  }
+
+  applySubmit.disabled = true;
+  applyResult.textContent = "Submitting…";
+  applyResult.className = "";
+
+  try {
+    // Stored in Supabase so the admin panel can review/approve it...
+    const { error: dbError } = await HelixAuth.getClient()
+      .from("submissions")
+      .insert({ type: activeForm.id, fields });
+    if (dbError) throw new Error("Something went wrong saving your application.");
+
+    // ...and pinged to Discord for a live notification (best-effort, won't
+    // block the submission if it fails).
+    fetch("/api/submit-form", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: activeForm.id, fields }),
+    }).catch(() => {});
+
+    applyForm.reset();
+    applyResult.textContent = "Submitted — thanks! We'll be in touch.";
+    applyResult.className = "ok";
+  } catch (err) {
+    applyResult.textContent = err.message;
+    applyResult.className = "err";
+  } finally {
+    applySubmit.disabled = false;
+  }
+});
+
+renderTabs();
+renderFields();
+</script>
+</body>
+</html>

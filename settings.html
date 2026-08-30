@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Settings</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .settings-shell { max-width: 560px; margin: 0 auto; padding: 0 20px 80px; }
+  .settings-box {
+    padding: 32px; border: 1px solid var(--line); border-radius: 20px;
+    background: var(--panel-strong); box-shadow: var(--shadow);
+  }
+  .settings-box h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .settings-box > p.sub { color: var(--muted); font-size: .9rem; margin: 0 0 22px; line-height: 1.6; }
+
+  .helix-badge {
+    display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 999px; vertical-align: middle;
+  }
+  .helix-badge-premium { background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; }
+  .helix-badge-admin { background: rgba(255,139,160,.15); color: #ff8ba0; border: 1px solid rgba(255,139,160,.4); }
+
+  .accent-grid { display: flex; gap: 12px; margin: 10px 0 22px; flex-wrap: wrap; }
+  .accent-swatch {
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+    position: relative;
+  }
+  .accent-swatch.selected { border-color: var(--text); }
+  .accent-swatch[data-accent="cyan"]   { background: linear-gradient(135deg, #4bdcff, #6de1ff); }
+  .accent-swatch[data-accent="violet"] { background: linear-gradient(135deg, #9675ff, #b79cff); }
+  .accent-swatch[data-accent="green"]  { background: linear-gradient(135deg, #4bffb0, #6dffca); }
+  .accent-swatch[data-accent="rose"]   { background: linear-gradient(135deg, #ff8ba0, #ffb3c2); }
+  .accent-swatch[data-accent="gold"]   { background: linear-gradient(135deg, #ffcf5c, #ffe08a); }
+
+  .settings-box button.save {
+    padding: 11px 20px; border: 0; border-radius: 10px; cursor: pointer;
+    background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; font-weight: 700;
+  }
+  .settings-box button.save:disabled { opacity: .5; cursor: default; }
+
+  #settingsStatus { margin-top: 14px; font-size: .82rem; color: var(--muted); min-height: 1.2em; }
+  #settingsStatus.ok { color: var(--c); }
+  #settingsStatus.err { color: #ff8ba0; }
+
+  .locked-note { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+  .locked-note a { color: var(--a); }
+</style>
+</head>
+<body data-page="settings">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+    <a href="discord.html">Discord</a>
+    <a href="apply.html">Apply</a>
+    <a href="ideas.html">Ideas</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell settings-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">ACCOUNT</span>
+    <h1>YOUR <span>SETTINGS.</span></h1>
+    <p>Personalize your Helix experience.</p>
+  </section>
+
+  <div class="settings-box" id="settingsBox">
+    <p class="locked-note">Checking your account…</p>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> ACCOUNT SETTINGS</footer>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/premium.js"></script>
+<script>
+const box = document.getElementById("settingsBox");
+const ACCENTS = ["cyan", "violet", "green", "rose", "gold"];
+
+function loggedOutView() {
+  box.innerHTML = `
+    <h1>Sign in first</h1>
+    <p class="sub">Settings are tied to your account.</p>
+    <p class="locked-note">Head to <a href="login.html">the login page</a> to sign in.</p>
+  `;
+}
+
+function upsellView(profile) {
+  box.innerHTML = `
+    <h1>Signed in as ${escapeHtml(profile.email)}</h1>
+    <p class="sub">Advanced settings are a premium feature.</p>
+    <p class="locked-note">
+      Premium is invite-only for now — ask about it in the Helix Discord
+      server, or keep an eye on <a href="apply.html">the beta form</a> for
+      openings.
+    </p>
+  `;
+}
+
+function premiumView(profile) {
+  box.innerHTML = `
+    <h1>Signed in as ${escapeHtml(profile.email)} <span class="helix-badge ${profile.role === "admin" ? "helix-badge-admin" : "helix-badge-premium"}">${profile.role === "admin" ? "ADMIN" : "★ PREMIUM"}</span></h1>
+    <p class="sub">Premium perk: pick the accent color used across Helix's interface.</p>
+    <div class="accent-grid" id="accentGrid"></div>
+    <button class="save" id="saveAccent" type="button">Save</button>
+    <div id="settingsStatus"></div>
+  `;
+
+  const grid = document.getElementById("accentGrid");
+  let selected = profile.accent || "cyan";
+
+  function renderGrid() {
+    grid.innerHTML = ACCENTS.map((a) => `
+      <div class="accent-swatch ${a === selected ? "selected" : ""}" data-accent="${a}" title="${a}"></div>
+    `).join("");
+    grid.querySelectorAll(".accent-swatch").forEach((el) => {
+      el.addEventListener("click", () => {
+        selected = el.dataset.accent;
+        renderGrid();
+      });
+    });
+  }
+  renderGrid();
+
+  document.getElementById("saveAccent").addEventListener("click", async () => {
+    const status = document.getElementById("settingsStatus");
+    const btn = document.getElementById("saveAccent");
+    btn.disabled = true;
+    status.textContent = "Saving…";
+    status.className = "";
+
+    const { error } = await HelixAuth.getClient()
+      .from("profiles")
+      .update({ accent: selected })
+      .eq("id", profile.id);
+
+    if (error) {
+      status.textContent = "Couldn't save that — try again.";
+      status.className = "err";
+    } else {
+      status.textContent = "Saved.";
+      status.className = "ok";
+    }
+    btn.disabled = false;
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+(async function init() {
+  const profile = await HelixAuth.getProfile();
+  if (!profile) {
+    loggedOutView();
+    return;
+  }
+  if (HelixAuth.isPremium(profile)) {
+    premiumView(profile);
+  } else {
+    upsellView(profile);
+  }
+})();
+</script>
+</body>
+</html>

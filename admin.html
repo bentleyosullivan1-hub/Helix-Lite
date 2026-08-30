@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix // Admin</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .admin-shell { max-width: 920px; margin: 0 auto; padding: 0 20px 80px; }
+  .admin-box {
+    padding: 28px; border: 1px solid var(--line); border-radius: 20px;
+    background: var(--panel-strong); box-shadow: var(--shadow);
+  }
+  .admin-box h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .admin-box > p.sub { color: var(--muted); font-size: .88rem; margin: 0 0 20px; }
+
+  .admin-tabs {
+    display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px; padding: 4px;
+  }
+  .admin-tabs button {
+    flex: 1; min-width: 100px; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  }
+  .admin-tabs button.active { background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; }
+
+  table.admin-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  table.admin-table th {
+    text-align: left; color: var(--muted); font-size: .68rem; text-transform: uppercase;
+    letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--line);
+  }
+  table.admin-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text); }
+  table.admin-table tr:last-child td { border-bottom: none; }
+
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row-actions button {
+    border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--text);
+    padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: .78rem;
+  }
+  .row-actions button.primary { border-color: var(--a); color: var(--a); }
+  .row-actions button.danger { border-color: #ff8ba0; color: #ff8ba0; }
+
+  .pill-tag {
+    display: inline-block; font-size: .68rem; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); text-transform: uppercase;
+  }
+  .pill-tag.pending { border-color: #ffcf5c; color: #ffcf5c; }
+  .pill-tag.approved { border-color: var(--c); color: var(--c); }
+  .pill-tag.rejected { border-color: #ff8ba0; color: #ff8ba0; }
+
+  .fields-list { margin: 0; padding: 0; list-style: none; font-size: .82rem; color: var(--muted); }
+  .fields-list li { margin-bottom: 2px; }
+  .fields-list b { color: var(--text); }
+
+  .add-game-form {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px;
+    padding: 16px; border: 1px dashed var(--line); border-radius: 12px;
+  }
+  .add-game-form input, .add-game-form select { grid-column: span 1; }
+  .add-game-form textarea, .add-game-form .full { grid-column: 1 / -1; }
+  .add-game-form input, .add-game-form select, .add-game-form textarea {
+    padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.03); color: var(--text); font: inherit;
+  }
+  .add-game-form label { font-size: .72rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; }
+  .checkbox-row input { width: auto; }
+  .add-game-form button {
+    grid-column: 1 / -1; padding: 10px; border: 0; border-radius: 8px; cursor: pointer;
+    background: linear-gradient(100deg, #4bdcff, #9675ff); color: #040510; font-weight: 700;
+  }
+
+  #adminStatus { font-size: .82rem; color: var(--muted); min-height: 1.2em; margin-top: 10px; }
+  #adminStatus.err { color: #ff8ba0; }
+  #adminStatus.ok { color: var(--c); }
+
+  .locked-note { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+  .locked-note a { color: var(--a); }
+</style>
+</head>
+<body data-page="admin">
+<div id="cursor"></div><div id="cursorGlow"></div><canvas id="stars"></canvas>
+<header class="nav">
+  <a class="logo" href="index.html"><span>🕹️</span> HELIX</a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="games.html">Games</a>
+    <a href="login.html">Login</a>
+    <a href="discord.html">Discord</a>
+    <a href="apply.html">Apply</a>
+    <a href="ideas.html">Ideas</a>
+  </nav>
+  <button class="pill" onclick="toggleTheme()">◐ Interface</button>
+</header>
+
+<main class="page-shell admin-shell">
+  <section class="page-hero compact">
+    <span class="eyebrow">RESTRICTED</span>
+    <h1>ADMIN <span>PANEL.</span></h1>
+    <p>Submissions, users, the games catalog, and community ideas — all in one place.</p>
+  </section>
+
+  <div class="admin-box" id="adminBox">
+    <p class="locked-note">Checking your account…</p>
+  </div>
+</main>
+
+<footer class="protocol-footer">HELIX NETWORK <span class="separator">|</span> ADMIN</footer>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/premium.js"></script>
+<script>
+const box = document.getElementById("adminBox");
+let TAB = "submissions";
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+function shell(activeTab) {
+  const tabs = [
+    ["submissions", "Submissions"],
+    ["users", "Users"],
+    ["games", "Games"],
+    ["ideas", "Ideas"],
+  ];
+  box.innerHTML = `
+    <h1>Admin panel</h1>
+    <p class="sub">Manage everything from here.</p>
+    <div class="admin-tabs">
+      ${tabs.map(([id, label]) => `<button data-tab="${id}" class="${id === activeTab ? "active" : ""}">${label}</button>`).join("")}
+    </div>
+    <div id="tabMount"><p class="sub">Loading…</p></div>
+    <div id="adminStatus"></div>
+  `;
+  box.querySelectorAll(".admin-tabs button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      TAB = btn.dataset.tab;
+      shell(TAB);
+      renderTab();
+    });
+  });
+}
+
+function setStatus(msg, isError) {
+  const el = document.getElementById("adminStatus");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = isError ? "err" : "ok";
+}
+
+async function renderTab() {
+  if (TAB === "submissions") return renderSubmissions();
+  if (TAB === "users") return renderUsers();
+  if (TAB === "games") return renderGames();
+  if (TAB === "ideas") return renderIdeasAdmin();
+}
+
+/* ---------------- Submissions ---------------- */
+async function renderSubmissions() {
+  const mount = document.getElementById("tabMount");
+  const sb = HelixAuth.getClient();
+  const { data, error } = await sb.from("submissions").select("*").order("created_at", { ascending: false });
+
+  if (error) {
+    mount.innerHTML = `<p class="sub">Couldn't load submissions.</p>`;
+    return;
+  }
+  if (!data.length) {
+    mount.innerHTML = `<p class="sub">No submissions yet.</p>`;
+    return;
+  }
+
+  mount.innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Type</th><th>Fields</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${data.map((s) => `
+          <tr>
+            <td>${escapeHtml(s.type)}</td>
+            <td>
+              <ul class="fields-list">
+                ${Object.entries(s.fields || {}).map(([k, v]) => `<li><b>${escapeHtml(k)}:</b> ${escapeHtml(v)}</li>`).join("")}
+              </ul>
+            </td>
+            <td><span class="pill-tag ${s.status}">${escapeHtml(s.status)}</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="primary" data-act="approve" data-id="${s.id}">Approve</button>
+                <button data-act="reject" data-id="${s.id}">Reject</button>
+                <button class="danger" data-act="delete-sub" data-id="${s.id}">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  mount.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = Number(btn.dataset.id);
+      const act = btn.dataset.act;
+      if (act === "approve") await sb.from("submissions").update({ status: "approved" }).eq("id", id);
+      if (act === "reject") await sb.from("submissions").update({ status: "rejected" }).eq("id", id);
+      if (act === "delete-sub") await sb.from("submissions").delete().eq("id", id);
+      setStatus("Updated.");
+      renderSubmissions();
+    });
+  });
+}
+
+/* ---------------- Users ---------------- */
+async function renderUsers() {
+  const mount = document.getElementById("tabMount");
+  const sb = HelixAuth.getClient();
+  const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
+
+  if (error) {
+    mount.innerHTML = `<p class="sub">Couldn't load users.</p>`;
+    return;
+  }
+
+  mount.innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Email</th><th>Role</th><th>Premium</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${data.map((u) => `
+          <tr>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="pill-tag">${escapeHtml(u.role)}</span></td>
+            <td><span class="pill-tag ${u.premium ? "approved" : ""}">${u.premium ? "premium" : "standard"}</span></td>
+            <td>
+              <div class="row-actions">
+                <button data-act="toggle-premium" data-id="${u.id}">${u.premium ? "Remove premium" : "Make premium"}</button>
+                <button data-act="toggle-admin" data-id="${u.id}">${u.role === "admin" ? "Remove admin" : "Make admin"}</button>
+              </div>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  mount.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const user = data.find((u) => u.id === id);
+      if (btn.dataset.act === "toggle-premium") {
+        await sb.from("profiles").update({ premium: !user.premium }).eq("id", id);
+      }
+      if (btn.dataset.act === "toggle-admin") {
+        await sb.from("profiles").update({ role: user.role === "admin" ? "user" : "admin" }).eq("id", id);
+      }
+      setStatus("Updated.");
+      renderUsers();
+    });
+  });
+}
+
+/* ---------------- Games ---------------- */
+async function renderGames() {
+  const mount = document.getElementById("tabMount");
+  const sb = HelixAuth.getClient();
+  const { data, error } = await sb.from("games").select("*").order("position", { ascending: true });
+
+  if (error) {
+    mount.innerHTML = `<p class="sub">Couldn't load games.</p>`;
+    return;
+  }
+
+  mount.innerHTML = `
+    <div class="add-game-form" id="addGameForm">
+      <div><label>Title</label><input id="gTitle" required></div>
+      <div><label>Category</label>
+        <select id="gCategory"><option value="arcade">Arcade</option><option value="puzzle">Puzzle</option></select>
+      </div>
+      <div class="full"><label>Description</label><textarea id="gDesc"></textarea></div>
+      <div><label>File / path</label><input id="gFile" placeholder="games/example.html"></div>
+      <div class="checkbox-row full">
+        <input type="checkbox" id="gPremium"><label for="gPremium" style="margin:0;">Premium-only</label>
+      </div>
+      <button type="button" id="gAddBtn">Add game</button>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>Title</th><th>Category</th><th>Premium</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${data.map((g) => `
+          <tr>
+            <td><b>${escapeHtml(g.title)}</b><br><span class="sub" style="color:var(--muted);font-size:.8rem;">${escapeHtml(g.description || "")}</span></td>
+            <td>${escapeHtml(g.category)}</td>
+            <td><span class="pill-tag ${g.premium_only ? "approved" : ""}">${g.premium_only ? "premium" : "everyone"}</span></td>
+            <td>
+              <div class="row-actions">
+                <button data-act="toggle-premium-game" data-id="${g.id}">${g.premium_only ? "Make free" : "Make premium"}</button>
+                <button class="danger" data-act="delete-game" data-id="${g.id}">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById("gAddBtn").addEventListener("click", async () => {
+    const title = document.getElementById("gTitle").value.trim();
+    if (!title) return;
+    const { error } = await sb.from("games").insert({
+      title,
+      description: document.getElementById("gDesc").value.trim() || null,
+      category: document.getElementById("gCategory").value,
+      file: document.getElementById("gFile").value.trim() || null,
+      premium_only: document.getElementById("gPremium").checked,
+      position: data.length,
+    });
+    if (error) { setStatus("Couldn't add that game.", true); return; }
+    setStatus("Game added.");
+    renderGames();
+  });
+
+  mount.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = Number(btn.dataset.id);
+      const game = data.find((g) => g.id === id);
+      if (btn.dataset.act === "toggle-premium-game") {
+        await sb.from("games").update({ premium_only: !game.premium_only }).eq("id", id);
+      }
+      if (btn.dataset.act === "delete-game") {
+        if (!confirm(`Delete "${game.title}"?`)) return;
+        await sb.from("games").delete().eq("id", id);
+      }
+      setStatus("Updated.");
+      renderGames();
+    });
+  });
+}
+
+/* ---------------- Ideas (suggestions) ---------------- */
+async function renderIdeasAdmin() {
+  const mount = document.getElementById("tabMount");
+  const sb = HelixAuth.getClient();
+  const { data, error } = await sb.from("suggestions").select("*").order("created_at", { ascending: false });
+
+  if (error) {
+    mount.innerHTML = `<p class="sub">Couldn't load ideas.</p>`;
+    return;
+  }
+
+  mount.innerHTML = `
+    <table class="admin-table">
+      <thead><tr><th>Title</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${data.map((s) => `
+          <tr>
+            <td><b>${escapeHtml(s.title)}</b><br><span style="color:var(--muted);font-size:.8rem;">${escapeHtml(s.description || "")}</span></td>
+            <td>
+              <select data-id="${s.id}" class="status-select">
+                ${["open", "planned", "done", "closed"].map((st) => `<option value="${st}" ${s.status === st ? "selected" : ""}>${st}</option>`).join("")}
+              </select>
+            </td>
+            <td><div class="row-actions"><button class="danger" data-act="delete-idea" data-id="${s.id}">Delete</button></div></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  mount.querySelectorAll(".status-select").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      await sb.from("suggestions").update({ status: sel.value }).eq("id", Number(sel.dataset.id));
+      setStatus("Updated.");
+    });
+  });
+  mount.querySelectorAll("button[data-act='delete-idea']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await sb.from("suggestions").delete().eq("id", Number(btn.dataset.id));
+      setStatus("Deleted.");
+      renderIdeasAdmin();
+    });
+  });
+}
+
+/* ---------------- Gate + boot ---------------- */
+(async function init() {
+  const profile = await HelixAuth.getProfile();
+
+  if (!profile) {
+    box.innerHTML = `
+      <p class="locked-note">You need to sign in first. Head to <a href="login.html">the login page</a>.</p>
+    `;
+    return;
+  }
+  if (!HelixAuth.isAdmin(profile)) {
+    box.innerHTML = `<p class="locked-note">This account doesn't have admin access.</p>`;
+    return;
+  }
+
+  shell(TAB);
+  renderTab();
+})();
+</script>
+</body>
+</html>
